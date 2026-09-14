@@ -27,7 +27,11 @@ USE atm_fields_bounds_mod, ONLY: tdims
 USE theta_field_sizes, ONLY: t_i_length
 
 USE jules_snow_mod, ONLY: maskd, frac_snow_subl_melt
-USE jules_science_fixes_mod, ONLY: l_fix_snow_frac, l_fix_neg_snow
+USE jules_science_fixes_mod, ONLY: l_fix_snow_frac, i_fix_neg_snow,            &
+                                   ip_fix_neg_snow_none,                       &
+                                   ip_fix_neg_snow_none_corr,                  &
+                                   ip_fix_neg_snow_v1, ip_fix_neg_snow_v2,     &
+                                   ip_fix_neg_snow_v3
 USE water_constants_mod, ONLY: tm, rho_ice
 USE jules_surface_mod, ONLY: l_aggregate
 USE jules_vegetation_mod, ONLY: can_model
@@ -141,7 +145,7 @@ IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_in,zhook_handle)
 !$OMP        dq,snowdep_surft,tstar,snow_surft,                                &
 !$OMP        catch,frac_snow_subl_melt,maskd,resfs,gc,ch,vshr,l_et_stom,       &
 !$OMP        l_et_stom_surft,resfs_stom,gc_stom_surft,flake,                   &
-!$OMP        canopy,epdt,resft,l_fix_snow_frac, l_fix_neg_snow)
+!$OMP        canopy,epdt,resft,l_fix_snow_frac, i_fix_neg_snow)
 DO k = 1,surft_pts
   l = surft_index(k)
   j=(land_index(l) - 1) / t_i_length + 1
@@ -155,70 +159,72 @@ DO k = 1,surft_pts
   ! Calculate for a snow-free canopy then adjust for snow. With the fix,
   ! the potential fraction depends on the canopy water content.
   !-----------------------------------------------------------------------
-  IF (l_fix_neg_snow) THEN
-    ! Make the logic more transparent.
-    IF (dq(l) >= 0.0) THEN
-      ! Only aerodynamic resistance for downward fluxes.
+  SELECT CASE (i_fix_neg_snow)
+    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
+      !   Original code
       fracaero_t(l) = 1.0
-      IF (tstar(l) > tm) THEN
-        ! All downward moisture flux is added to canopy water.
-        fracaero_s(l) = 0.0
-      ELSE
-        ! All downward moisture flux is added to snow.
-        fracaero_s(l) = 1.0
-      END IF
-    ELSE
-      ! For upward fluxes, calculate the fraction for canopy water,
-      ! then apply that fraction on the snow-free part of the grid box.
-      IF (catch(l) > 0.0) THEN
+      IF (dq(l) <  0.0 .AND. snowdep_surft(l) <= 0.0) fracaero_t(l) = 0.0
+      IF (dq(l) <  0.0 .AND. snowdep_surft(l) <= 0.0 .AND. catch(l) >  0.0)    &
         fracaero_t(l) = canopy(l) / ( epdt(l) + catch(l) )
-      ELSE
-        fracaero_t(l) = 0.0
-      END IF
-      msk_sndpth = MAX(snowdep_surft(l), snow_surft(l) / rho_ice)
-      IF (msk_sndpth > 0.0) THEN
+      IF (snowdep_surft(l) > 0.0) THEN
         IF (frac_snow_subl_melt == 1) THEN
-          msk_sndpth = maskd * msk_sndpth
-          IF (msk_sndpth > SQRT(2.0 * EPSILON(msk_sndpth))) THEN
-            fracaero_s(l) = 1.0 - EXP(-msk_sndpth)
+          IF (l_fix_snow_frac) THEN
+            ! Use linear expansion of exponential if non-linear term
+            ! is of order EPSILON (i.e., x^2.0/2.0 ~ EPSILON)
+            IF (snowdep_surft(l) >                                             &
+                SQRT(2.0*EPSILON(snowdep_surft))/maskd) THEN
+              fracaero_t(l) = 1.0 - EXP(-maskd * snowdep_surft(l)) *           &
+                           (1.0 - fracaero_t(l))
+            ELSE
+              fracaero_t(l) = fracaero_t(l) +                                  &
+                           (1.0 - fracaero_t(l)) * maskd * snowdep_surft(l)
+            END IF
           ELSE
-            fracaero_s(l) = msk_sndpth
+            fracaero_t(l) = 1.0 - EXP(-maskd * snowdep_surft(l))
           END IF
+        END IF
+      END IF
+      fracaero_t(l) = MIN(fracaero_t(l),1.0)
+    CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2)
+      ! Make the logic more transparent.
+      IF (dq(l) >= 0.0) THEN
+        ! Only aerodynamic resistance for downward fluxes.
+        fracaero_t(l) = 1.0
+        IF (tstar(l) > tm) THEN
+          ! All downward moisture flux is added to canopy water.
+          fracaero_s(l) = 0.0
         ELSE
-          ! Snow is assumed to cover the entire canopy.
+          ! All downward moisture flux is added to snow.
           fracaero_s(l) = 1.0
         END IF
-        fracaero_t(l) = fracaero_s(l) + (1.0 - fracaero_s(l)) * fracaero_t(l)
       ELSE
-        ! Set the sublimation fraction to 0.
-        fracaero_s(l) = 0.0
-      END IF
-    END IF
-  ELSE
-    !   Original code
-    fracaero_t(l) = 1.0
-    IF (dq(l) <  0.0 .AND. snowdep_surft(l) <= 0.0) fracaero_t(l) = 0.0
-    IF (dq(l) <  0.0 .AND. snowdep_surft(l) <= 0.0 .AND. catch(l) >  0.0)      &
-      fracaero_t(l) = canopy(l) / ( epdt(l) + catch(l) )
-    IF (snowdep_surft(l) > 0.0) THEN
-      IF (frac_snow_subl_melt == 1) THEN
-        IF (l_fix_snow_frac) THEN
-          ! Use linear expansion of exponential if non-linear term
-          ! is of order EPSILON (i.e., x^2.0/2.0 ~ EPSILON)
-          IF (snowdep_surft(l) > SQRT(2.0*EPSILON(snowdep_surft))/maskd) THEN
-            fracaero_t(l) = 1.0 - EXP(-maskd * snowdep_surft(l)) *             &
-                         (1.0 - fracaero_t(l))
-          ELSE
-            fracaero_t(l) = fracaero_t(l) +                                    &
-                         (1.0 - fracaero_t(l)) * maskd * snowdep_surft(l)
-          END IF
+        ! For upward fluxes, calculate the fraction for canopy water,
+        ! then apply that fraction on the snow-free part of the grid box.
+        IF (catch(l) > 0.0) THEN
+          fracaero_t(l) = canopy(l) / ( epdt(l) + catch(l) )
         ELSE
-          fracaero_t(l) = 1.0 - EXP(-maskd * snowdep_surft(l))
+          fracaero_t(l) = 0.0
+        END IF
+        msk_sndpth = MAX(snowdep_surft(l), snow_surft(l) / rho_ice)
+        IF (msk_sndpth > 0.0) THEN
+          IF (frac_snow_subl_melt == 1) THEN
+            msk_sndpth = maskd * msk_sndpth
+            IF (msk_sndpth > SQRT(2.0 * EPSILON(msk_sndpth))) THEN
+              fracaero_s(l) = 1.0 - EXP(-msk_sndpth)
+            ELSE
+              fracaero_s(l) = msk_sndpth
+            END IF
+          ELSE
+            ! Snow is assumed to cover the entire canopy.
+            fracaero_s(l) = 1.0
+          END IF
+          fracaero_t(l) = fracaero_s(l) + (1.0 - fracaero_s(l)) * fracaero_t(l)
+        ELSE
+          ! Set the sublimation fraction to 0.
+          fracaero_s(l) = 0.0
         END IF
       END IF
-    END IF
-    fracaero_t(l) = MIN(fracaero_t(l),1.0)
-  END IF
+  END SELECT
 
   !-----------------------------------------------------------------------
   ! Calculate resistance factors for transpiration from vegetation tiles
@@ -235,28 +241,35 @@ END DO
 !$OMP END PARALLEL DO
 
 
-! RESFT < 1 for snow on canopy if canopy snow model used, so re-calculate.
-! This works only if the first npft tiles are the vegetated ones.
-IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
-  IF ( cansnowtile ) THEN
+SELECT CASE(i_fix_neg_snow)
+  CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                       &
+        ip_fix_neg_snow_v1, ip_fix_neg_snow_v2)
+    ! RESFT < 1 for snow on canopy if canopy snow model used, so re-calculate.
+    ! This works only if the first npft tiles are the vegetated ones.
+    IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
+      IF ( cansnowtile ) THEN
 !$OMP PARALLEL DO IF(surft_pts > 1) DEFAULT(NONE) PRIVATE(i, j, k, l)          &
 !$OMP          SHARED(surft_pts, surft_index, land_index, t_i_length,          &
 !$OMP                 snow_surft, gc, vshr, fracaero_t,                        &
 !$OMP                 resfs, ch, resft) SCHEDULE(STATIC)
-    DO k = 1,surft_pts
-      l = surft_index(k)
-      IF (snow_surft(l) >  0.0) THEN
-        j = (land_index(l) - 1) / t_i_length + 1
-        i = land_index(l) - (j-1) * t_i_length
-        fracaero_t(l) = 0.0
-        resfs(l) = gc(l) /                                                     &
-                (gc(l) + ch(l) * vshr(i,j))
-        resft(l) = resfs(l)
-      END IF
-    END DO
+        DO k = 1,surft_pts
+          l = surft_index(k)
+          IF (snow_surft(l) >  0.0) THEN
+            j = (land_index(l) - 1) / t_i_length + 1
+            i = land_index(l) - (j-1) * t_i_length
+            fracaero_t(l) = 0.0
+            resfs(l) = gc(l) /                                                 &
+                    (gc(l) + ch(l) * vshr(i,j))
+            resft(l) = resfs(l)
+          END IF
+        END DO
 !$OMP END PARALLEL DO
-  END IF
-END IF
+      END IF
+    END IF
+  CASE (ip_fix_neg_snow_v3)
+    ! This post hoc restriction of sublimation from the canopy has been
+    ! integrated into the resistance network.
+END SELECT
 
 IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_out,zhook_handle)
 RETURN
