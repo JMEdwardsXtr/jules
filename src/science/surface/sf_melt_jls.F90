@@ -183,7 +183,10 @@ DO k = 1,surft_pts
   END IF
   !
   SELECT CASE (i_fix_neg_snow)
-    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr, ip_fix_neg_snow_v1)
+    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_v1)
+      snowinc_surft(l) = - MIN(snow_surft(l), ei_surft(l) * timestep )
+      snow_new = MAX(0.0, snow_surft(l) + snowinc_surft(l))
+    CASE (ip_fix_neg_snow_none_corr)
       snowinc_surft(l) = - ei_surft(l) * timestep
       snow_new = snow_surft(l) - ei_surft(l) * timestep
     CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
@@ -224,7 +227,8 @@ DO k = 1,surft_pts
               (lcmelt * (tstar_surft(l) - tm) *                                &
               maskd * snow_new / snow_density / lf +                           &
               ei_surft(l)) * timestep)
-          CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+          CASE (ip_fix_neg_snow_none_corr,                                     &
+                ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
             snowinc_surft(l) = - MIN(snow_surft(l),                            &
               ( (lcmelt / lf + alpha1(l) * resft(l) * rhokh1_prime) *          &
                 (tstar_surft(l) - tm) *                                        &
@@ -273,6 +277,22 @@ DO k = 1,surft_pts
     END SELECT
     dftl = cp * rhokh1_prime * dtstar
     dfqw = alpha1(l) * resft(l) * rhokh1_prime * dtstar
+    SELECT CASE (i_fix_neg_snow)
+      CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                   &
+            ip_fix_neg_snow_v1)
+        ftl_surft(l) = ftl_surft(l) + dftl
+        fqw_surft(l) = fqw_surft(l) + dfqw
+        ei_surft(l) = ei_surft(l) + dfqw
+        !-----------------------------------------------------------------------
+        !  Update gridbox-mean quantities
+        !-----------------------------------------------------------------------
+        dftl = tile_frac(l) * dftl
+        dfqw = tile_frac(l) * dfqw
+        ftl_1(i,j) = ftl_1(i,j) + fld_sea(i,j) * dftl
+        fqw_1(i,j) = fqw_1(i,j) + fld_sea(i,j) * dfqw
+      CASE(ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+        ! No action.
+    END SELECT
   ELSE
     SELECT CASE (i_fix_neg_snow)
       CASE(ip_fix_neg_snow_none, ip_fix_neg_snow_v1)
