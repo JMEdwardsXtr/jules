@@ -45,15 +45,22 @@ from .version80_81 import *
 from .version81_82 import *
 
 
-class vnYY_txxxx(MacroUpgrade):
+class vn82_t????(MacroUpgrade):
 
-    """Upgrade macro from JULES by Author"""
+    """Upgrade macro from JULES by J. M. Edwards"""
 
-    BEFORE_TAG = "vnY.Y"
-    AFTER_TAG = "vnY.Y_txxxx"
+    BEFORE_TAG = "vn8.2"
+    AFTER_TAG = "vnY.Y_t????"
 
     def upgrade(self, config, meta_config=None):
         """Upgrade a JULES runtime app configuration."""
 
         # Add settings
+        l_fix_neg_snow = get_setting_value(config, ["namelist:jules_snow", "l_fix_neg_snow"], no_ignore=False)
+        if l_fix_neg_snow:
+            self.add_setting(config, ["namelist:jules_snow", "i_fix_neg_snow"], "2")
+        else:
+            self.add_setting(config, ["namelist:jules_snow", "i_fix_neg_snow"], "0")
+        self.remove_setting(config, ["namelist:jules_snow", "l_fix_neg_snow"])
+
         return config, self.reports

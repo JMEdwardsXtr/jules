@@ -185,7 +185,8 @@ DO k = 1,surft_pts
         END IF
       END IF
       fracaero_t(l) = MIN(fracaero_t(l),1.0)
-    CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2)
+    CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+      ! Explicit code for v3 to be added!
       ! Make the logic more transparent.
       IF (dq(l) >= 0.0) THEN
         ! Only aerodynamic resistance for downward fluxes.
