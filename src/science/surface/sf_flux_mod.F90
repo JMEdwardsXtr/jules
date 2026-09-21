@@ -224,11 +224,11 @@ DO k = 1,surft_pts
 
   lh = lh0
   SELECT CASE (i_fix_neg_snow)
-    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
-      IF (snowdepth(l) > 0.0) lh = ls
-    CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-      ! Effective latent. resft should not be 0 if there is any snow.
-      IF (resft(l) > 0.0) lh = lc + lf * fracs(l) / resft(l)
+  CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
+    IF (snowdepth(l) > 0.0) lh = ls
+  CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+    ! Effective latent. resft should not be 0 if there is any snow.
+    IF (resft(l) > 0.0) lh = lc + lf * fracs(l) / resft(l)
   END SELECT
 
   IF (l_vegdrag) THEN

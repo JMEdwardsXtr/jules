@@ -267,43 +267,43 @@ DO n = 1,nsurft
     l = surft_index(k,n)
     e_surft_old(l,n) = fqw_surft(l,n)
     SELECT CASE (i_fix_neg_snow)
-      CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
-        IF (snow_surft(l,n)  >   0.0) THEN
-          le_surft_old(l,n) = (lc + lf) * fqw_surft(l,n)
-        ELSE
-          le_surft_old(l,n) = lc * fqw_surft(l,n)
-        END IF
-      CASE (ip_fix_neg_snow_v1)
-        ! Calculate the sublimation or deposition on the snow fraction
-        ! consistently with the assumed resistance network. The canopy
-        ! evaporation must be set here to allow it to be modified to
-        ! account for exhaustion of the snow store.
-        IF (resft(l,n) > 0.0) ecan_surft(l,n) =                                &
-                            (1.0 - flake(l,n)) *                               &
-                            (fracaero_t(l,n) - fracaero_s(l,n)) *              &
-                            fqw_surft(l,n) / resft(l,n)
+    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
+      IF (snow_surft(l,n)  >   0.0) THEN
+        le_surft_old(l,n) = (lc + lf) * fqw_surft(l,n)
+      ELSE
         le_surft_old(l,n) = lc * fqw_surft(l,n)
+      END IF
+    CASE (ip_fix_neg_snow_v1)
+      ! Calculate the sublimation or deposition on the snow fraction
+      ! consistently with the assumed resistance network. The canopy
+      ! evaporation must be set here to allow it to be modified to
+      ! account for exhaustion of the snow store.
+      IF (resft(l,n) > 0.0) ecan_surft(l,n) =                                  &
+                          (1.0 - flake(l,n)) *                                 &
+                          (fracaero_t(l,n) - fracaero_s(l,n)) *                &
+                          fqw_surft(l,n) / resft(l,n)
+      le_surft_old(l,n) = lc * fqw_surft(l,n)
+      IF (snow_surft(l,n)  >   0.0) THEN
+        ei_surft(l,n) = (1.0 - flake(l,n)) * fracaero_s(l,n) *                 &
+                        fqw_surft(l,n) / resft(l,n)
+        le_surft_old(l,n) = le_surft_old(l,n) + lf * ei_surft(l,n)
+      END IF
+    CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+      le_surft_old(l,n) = lc * fqw_surft(l,n)
+      ! Calculate the sublimation or deposition on the snow fraction
+      ! consistently with the assumed resistance network. The canopy
+      ! evaporation must be set here to allow it to be modified to
+      ! account for exhaustion of the snow store.
+      IF (resft(l,n) > 0.0) THEN
+        ecan_surft(l,n) = (1.0 - flake(l,n)) *                                 &
+                          (fracaero_t(l,n) - fracaero_s(l,n)) *                &
+                          fqw_surft(l,n) / resft(l,n)
         IF (snow_surft(l,n)  >   0.0) THEN
           ei_surft(l,n) = (1.0 - flake(l,n)) * fracaero_s(l,n) *               &
                           fqw_surft(l,n) / resft(l,n)
           le_surft_old(l,n) = le_surft_old(l,n) + lf * ei_surft(l,n)
         END IF
-      CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-        le_surft_old(l,n) = lc * fqw_surft(l,n)
-        ! Calculate the sublimation or deposition on the snow fraction
-        ! consistently with the assumed resistance network. The canopy
-        ! evaporation must be set here to allow it to be modified to
-        ! account for exhaustion of the snow store.
-        IF (resft(l,n) > 0.0) THEN
-          ecan_surft(l,n) = (1.0 - flake(l,n)) *                               &
-                            (fracaero_t(l,n) - fracaero_s(l,n)) *              &
-                            fqw_surft(l,n) / resft(l,n)
-          IF (snow_surft(l,n)  >   0.0) THEN
-            ei_surft(l,n) = (1.0 - flake(l,n)) * fracaero_s(l,n) *             &
-                            fqw_surft(l,n) / resft(l,n)
-            le_surft_old(l,n) = le_surft_old(l,n) + lf * ei_surft(l,n)
-          END IF
-        END IF
+      END IF
     END SELECT
   END DO
 !$OMP END DO
@@ -318,35 +318,35 @@ DO n = 1,nsurft
     l = surft_index(k,n)
     IF (snow_surft(l,n)  >   0.0) THEN
       SELECT CASE (i_fix_neg_snow)
-        CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
-          ei_surft(l,n) =  fqw_surft(l,n)
-          edt = ei_surft(l,n) * timestep
-          IF ( edt  >   snow_surft(l,n) )                                      &
-            ei_surft(l,n) = snow_surft(l,n) / timestep
-          fqw_surft(l,n) = fqw_surft(l,n) -  ei_surft(l,n)
-        CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-          IF (fqw_surft(l,n) < 0.0) THEN
-            IF (tstar_surft(l,n) < tm) THEN
-              ! Deposit all moisture on the snow.
-              ei_surft(l,n)   = fqw_surft(l,n)
-              ecan_surft(l,n) = 0.0
-            ELSE
-              ! Partition the downward flux between the lake and canopy
-              ! fractions. Actual fluxes are used directly rather than
-              ! fluxes deduced from the potential evaporation to follow
-              ! previous functionality for this case.
-              ecan_surft(l,n)  = (1.0 - flake(l,n)) * fqw_surft(l,n)
-              elake_surft(l,n) = flake(l,n) * fqw_surft(l,n)
-              ei_surft(l,n)    = 0.0
-            END IF
+      CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
+        ei_surft(l,n) =  fqw_surft(l,n)
+        edt = ei_surft(l,n) * timestep
+        IF ( edt  >   snow_surft(l,n) )                                        &
+          ei_surft(l,n) = snow_surft(l,n) / timestep
+        fqw_surft(l,n) = fqw_surft(l,n) -  ei_surft(l,n)
+      CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+        IF (fqw_surft(l,n) < 0.0) THEN
+          IF (tstar_surft(l,n) < tm) THEN
+            ! Deposit all moisture on the snow.
+            ei_surft(l,n)   = fqw_surft(l,n)
+            ecan_surft(l,n) = 0.0
           ELSE
-            edt = ei_surft(l,n) * timestep
-            IF ( edt  >   snow_surft(l,n) ) THEN
-              ecan_surft(l,n) = ecan_surft(l,n) + ei_surft(l,n) -              &
-                                snow_surft(l,n) / timestep
-              ei_surft(l,n) = snow_surft(l,n) / timestep
-            END IF
+            ! Partition the downward flux between the lake and canopy
+            ! fractions. Actual fluxes are used directly rather than
+            ! fluxes deduced from the potential evaporation to follow
+            ! previous functionality for this case.
+            ecan_surft(l,n)  = (1.0 - flake(l,n)) * fqw_surft(l,n)
+            elake_surft(l,n) = flake(l,n) * fqw_surft(l,n)
+            ei_surft(l,n)    = 0.0
           END IF
+        ELSE
+          edt = ei_surft(l,n) * timestep
+          IF ( edt  >   snow_surft(l,n) ) THEN
+            ecan_surft(l,n) = ecan_surft(l,n) + ei_surft(l,n) -                &
+                              snow_surft(l,n) / timestep
+            ei_surft(l,n) = snow_surft(l,n) / timestep
+          END IF
+        END IF
       END SELECT
     END IF
   END DO
@@ -433,26 +433,26 @@ DO n = 1,nsurft
       edt = ecan_surft(l,n) * timestep
       IF ( edt  >   canopy(l,n) ) THEN
         SELECT CASE (i_fix_neg_snow)
-          CASE (ip_fix_neg_snow_none)
-            esoil_surft(l,n) = (1.0 - flake(l,n)) *                            &
-                               (1.0 - fracaero_t(l,n) * canopy(l,n) / edt) *   &
-                                   resfs(l,n) * fqw_surft(l,n) / resft(l,n)
-            IF (sf_diag%l_et_stom .OR. sf_diag%l_et_stom_surft) THEN
-              sf_diag%et_stom_surft(l,n) = (1.0 - flake(l,n)) *                &
-                                           (1.0 - fracaero_t(l,n) *            &
-                                            canopy(l,n) / edt) *               &
-                                            sf_diag%resfs_stom(l,n) *          &
-                                            fqw_surft(l,n) / resft(l,n)
-            END IF
-          CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-            esoil_surft(l,n) = esoil_surft(l,n) + resfs(l,n) *                 &
-                               (ecan_surft(l,n) - canopy(l,n) / timestep)
-            IF (sf_diag%l_et_stom .OR. sf_diag%l_et_stom_surft) THEN
-              !           Check that we can use ecan_surft here.
-              sf_diag%et_stom_surft(l,n) = sf_diag%et_stom_surft(l,n) +        &
-                                           sf_diag%resfs_stom(l,n) *           &
-                                           (ecan_surft(l,n) -                  &
-                                            canopy(l,n) / edt)
+        CASE (ip_fix_neg_snow_none)
+          esoil_surft(l,n) = (1.0 - flake(l,n)) *                              &
+                             (1.0 - fracaero_t(l,n) * canopy(l,n) / edt) *     &
+                                 resfs(l,n) * fqw_surft(l,n) / resft(l,n)
+          IF (sf_diag%l_et_stom .OR. sf_diag%l_et_stom_surft) THEN
+            sf_diag%et_stom_surft(l,n) = (1.0 - flake(l,n)) *                  &
+                                         (1.0 - fracaero_t(l,n) *              &
+                                          canopy(l,n) / edt) *                 &
+                                          sf_diag%resfs_stom(l,n) *            &
+                                          fqw_surft(l,n) / resft(l,n)
+          END IF
+        CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+          esoil_surft(l,n) = esoil_surft(l,n) + resfs(l,n) *                   &
+                             (ecan_surft(l,n) - canopy(l,n) / timestep)
+          IF (sf_diag%l_et_stom .OR. sf_diag%l_et_stom_surft) THEN
+            !           Check that we can use ecan_surft here.
+            sf_diag%et_stom_surft(l,n) = sf_diag%et_stom_surft(l,n) +          &
+                                         sf_diag%resfs_stom(l,n) *             &
+                                         (ecan_surft(l,n) -                    &
+                                          canopy(l,n) / edt)
           END IF
         END SELECT
         ecan_surft(l,n) = canopy(l,n) / timestep
@@ -466,10 +466,10 @@ DO n = 1,nsurft
         ! With the fix, ecan_surft will have been initialized and must be
         ! zeroed.
         SELECT CASE (i_fix_neg_snow)
-          CASE (ip_fix_neg_snow_none)
-            ! No action in this case.
-          CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-            ecan_surft(l,n) = 0.0
+        CASE (ip_fix_neg_snow_none)
+          ! No action in this case.
+        CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+          ecan_surft(l,n) = 0.0
         END SELECT
       END IF
     END IF

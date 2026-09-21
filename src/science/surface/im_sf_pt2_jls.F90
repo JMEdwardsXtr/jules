@@ -477,11 +477,11 @@ IF ( .NOT. l_correct ) THEN
         ! Note that the logic is not the same as that in sf_flux
         ! because this adjustment was missing in the first version
         ! of the fix.
-        CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                 &
-              ip_fix_neg_snow_v1)
-          IF (snow_surft(l,n) >  0.0) lat_ht = ls
-        CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-          IF (resft(l,n) > 0.0) lat_ht = lc + lf * fracs(l,n) / resft(l,n)
+      CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                   &
+            ip_fix_neg_snow_v1)
+        IF (snow_surft(l,n) >  0.0) lat_ht = ls
+      CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+        IF (resft(l,n) > 0.0) lat_ht = lc + lf * fracs(l,n) / resft(l,n)
       END SELECT
       rhokpm(l,n) = rhokh_1(l,n) / ( ashtf_prime_surft(l,n) +                  &
                rhokh_1(l,n) * (lat_ht * alpha1(l,n) * resft(l,n) + cp) )

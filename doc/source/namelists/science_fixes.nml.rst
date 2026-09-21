@@ -29,6 +29,62 @@ is retired. See module for when the switch is due for review.
    mean height using a dry/moist lapse rate where appropriate. Option 2
    will only adjust values over the sea.
 
+.. nml:member:: i_fix_neg_snow
+
+   :type: integer
+   :permitted: 0, 1, 2, 3, 4
+   :default: 2
+
+   This replaces l_fix_neg_snow. Fixing issues related to the generation
+   of negative amounts of snow has exposed a number of issues with the
+   treatment of snow, and because fixing these issues has been a protracted
+   process, we need to support a number of partial fixes for different
+   defined applications. This requires that we replace the simple logical
+   l_fix_neg_snow with an integer.
+
+   The issues are discussed before the permitted options. Initial investigation
+   of the causes of negative amounts of snow revealed that the original
+   formulation of melting was incorrect (the variable lcmelt), and that
+   the interception of snow by an overloaded canopy could generate excessive
+   melting leading to negative amounts of snow. Fixing these issues revealed
+   proiblems with numerical rounding and underflows that required the
+   reformulation of mass balance in terms of actual increments, rather than
+   as a rate of melting or sublimation multipled by the timestep, leading
+   to a loss of bit-reproducibility. These fixes were introduced under
+   algorithm, apart from the change to increments, and the option .true.
+   intended to apply the corrections.
+
+   Unfortunately, a new bug was inadvertently introduced into the
+   calculation of melting during the reformulation in terms of increments,
+   and testing on a wider range of compilers exposed another numerical
+   problem with very small amounts of snow, leading to division by 0.
+   Fixing these issues further exposed a problem with the formulation
+   of the sublimation of snow from canopies when the canopy snow scheme was
+   enabled, such that the presence of any positive amount of snow on a
+   canopy would turn off evaporation of water, leading to an unnatural
+   and unphysical sensitivity of the model to tiny amounts of snow. A
+   provisional fix for this has been made availble.
+
+   We are obliged to support the following options:
+
+   0. Code equivalent to l_fix_neg_snow = .false., namely, the original
+      code, except for the reformulation in terms of increments and the
+      associated bug thereby introduced into melting.
+
+   1. A version that corrects only the bug introduced ubder option 0,
+      while retaining the original issues leading to the generation of
+      negative amounts of snow. This is provided only for historical
+      convenience for people upgrading from older version of JULES.
+
+   2. The option that was previously available with l_fix_neg_snow = .true.
+
+   3. A fix to the underlying problems and the bug in the calculation of
+      melting, but not to the issue of the suppression of canopy
+      evporation by small amounts of snow.
+
+   4. As option 3, but with a provisional fix to the unnatural sensitivity
+      of evporation to tiny amounts of snow.
+
 .. nml:member:: l_accurate_rho
 
    :type: logical
@@ -98,62 +154,12 @@ is retired. See module for when the switch is due for review.
    set to zero, which causes the roof to be effectively uncoupled when
    :nml:mem:`JULES_VEGETATION::l_vegcan_soilfx`.
 
-.. nml:member:: i_fix_neg_snow
+.. nml:member:: l_fix_neg_snow
 
-   :type: integer
-   :permitted: 0, 1, 2, 3, 4
-   :default: 2
+   :type: logical
+   :default: F
 
-   This replaces l_fix_neg_snow. Fixing issues related to the generation
-   of negative amounts of snow has exposed a number of issues with the
-   treatment of snow, and because fixing these issues has been a protracted
-   process, we need to support a number of partial fixes for different
-   defined applications. This requires that we replace the simple logical
-   l_fix_neg_snow with an integer.
-
-   The issues are discussed before the permitted options. Initial investigation
-   of the causes of negative amounts of snow revealed that the original
-   formulation of melting was incorrect (the variable lcmelt), and that
-   the interception of snow by an overloaded canopy could generate excessive
-   melting leading to negative amounts of snow. Fixing these issues revealed
-   proiblems with numerical rounding and underflows that required the
-   reformulation of mass balance in terms of actual increments, rather than
-   as a rate of melting or sublimation multipled by the timestep, leading
-   to a loss of bit-reproducibility. These fixes were introduced under
-   algorithm, apart from the change to increments, and the option .true.
-   intended to apply the corrections.
-
-   Unfortunately, a new bug was inadvertently introduced into the
-   calculation of melting during the reformulation in terms of increments,
-   and testing on a wider range of compilers exposed another numerical
-   problem with very small amounts of snow, leading to division by 0.
-   Fixing these issues further exposed a problem with the formulation
-   of the sublimation of snow from canopies when the canopy snow scheme was
-   enabled, such that the presence of any positive amount of snow on a
-   canopy would turn off evaporation of water, leading to an unnatural
-   and unphysical sensitivity of the model to tiny amounts of snow. A
-   provisional fix for this has been made availble.
-
-   We are obliged to support the following options:
-
-   0. Code equivalent to l_fix_neg_snow = .false., namely, the original
-      code, except for the reformulation in terms of increments and the
-      associated bug thereby introduced into melting.
-
-   1. A version that corrects only the bug introduced ubder option 0,
-      while retaining the original issues leading to the generation of
-      negative amounts of snow. This is provided only for historical
-      convenience for people upgrading from older version of JULES.
-
-   2. The option that was previously available with l_fix_neg_snow = .true.
-
-   3. A fix to the underlying problems and the bug in the calculation of
-      melting, but not to the issue of the suppression of canopy
-      evporation by small amounts of snow.
-
-   4. As option 3, but with a provisional fix to the unnatural sensitivity
-      of evporation to tiny amounts of snow.
-
+   This has been replaced by :nml:mem:`JULES_TEMP_FIXES::i_fix_neg_snow` .
 
 .. nml:member:: l_fix_osa_chloro
 

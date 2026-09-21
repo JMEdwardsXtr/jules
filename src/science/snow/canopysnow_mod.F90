@@ -207,27 +207,27 @@ IF ( cansnowtile ) THEN
     ! so we also restrict unload to be >=0.
     !-----------------------------------------------------------------------
     SELECT CASE (i_fix_neg_snow)
-      CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
-        ! Do not limit the interception and limit the unloading based
-        ! solely on the existing canopy amounts.
-        unload(k)      = MAX( MIN( unload(k), snow_can(i) ), 0.0 )
-        snow_can(i) = snow_can(i) + intercept(k) - unload(k)
-      CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-        ! Ensure the interception and the unloading are non-negative
-        ! and ensure that the final canopy snow amount does not exceed
-        ! the canopy capacity.
-        intercept(k) = MAX(0.0, intercept(k))
-        SELECT CASE (i_fix_neg_snow)
-          CASE (ip_fix_neg_snow_v1)
-            unload(k) = MAX(0.0, unload(k))
-          CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
-            unload(k)    = MAX( MIN( unload(k), snow_can(i) ), 0.0 )
-        END SELECT
-        snow_can(i) = snow_can(i) + intercept(k) - unload(k)
-        IF (snow_can(i) > catch_snow(i)) THEN
-          unload(k) = unload(k) + (snow_can(i) - catch_snow(i))
-          snow_can(i) = catch_snow(i)
-        END IF
+    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
+      ! Do not limit the interception and limit the unloading based
+      ! solely on the existing canopy amounts.
+      unload(k)      = MAX( MIN( unload(k), snow_can(i) ), 0.0 )
+      snow_can(i) = snow_can(i) + intercept(k) - unload(k)
+    CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+      ! Ensure the interception and the unloading are non-negative
+      ! and ensure that the final canopy snow amount does not exceed
+      ! the canopy capacity.
+      intercept(k) = MAX(0.0, intercept(k))
+      SELECT CASE (i_fix_neg_snow)
+      CASE (ip_fix_neg_snow_v1)
+        unload(k) = MAX(0.0, unload(k))
+      CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
+        unload(k)    = MAX( MIN( unload(k), snow_can(i) ), 0.0 )
+      END SELECT
+      snow_can(i) = snow_can(i) + intercept(k) - unload(k)
+      IF (snow_can(i) > catch_snow(i)) THEN
+        unload(k) = unload(k) + (snow_can(i) - catch_snow(i))
+        snow_can(i) = catch_snow(i)
+      END IF
     END SELECT
     snowfall(i) = snowfall(i) + graupfall(i) - intercept(k) + unload(k)
   END DO
