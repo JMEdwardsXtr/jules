@@ -46,7 +46,6 @@ from .version81_82 import *
 
 
 class vn82_t167(MacroUpgrade):
-
     """Upgrade macro from JULES by J. M. Edwards"""
 
     BEFORE_TAG = "vn8.2"
@@ -57,13 +56,18 @@ class vn82_t167(MacroUpgrade):
 
         # Add settings
         l_fix_neg_snow = (
-            self.get_setting_value(config,
-                ["namelist:jules_temp_fixes", "l_fix_neg_snow"], no_ignore=False)
-            ) == ".true."
+            self.get_setting_value(
+                config, ["namelist:jules_temp_fixes", "l_fix_neg_snow"], no_ignore=False
+            )
+        ) == ".true."
         if l_fix_neg_snow:
-            self.add_setting(config, ["namelist:jules_temp_fixes", "i_fix_neg_snow"], "2")
+            self.add_setting(
+                config, ["namelist:jules_temp_fixes", "i_fix_neg_snow"], "2"
+            )
         else:
-            self.add_setting(config, ["namelist:jules_temp_fixes", "i_fix_neg_snow"], "0")
+            self.add_setting(
+                config, ["namelist:jules_temp_fixes", "i_fix_neg_snow"], "0"
+            )
         self.remove_setting(config, ["namelist:jules_temp_fixes", "l_fix_neg_snow"])
 
         return config, self.reports
