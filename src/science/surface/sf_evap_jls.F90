@@ -433,7 +433,7 @@ DO n = 1,nsurft
       edt = ecan_surft(l,n) * timestep
       IF ( edt  >   canopy(l,n) ) THEN
         SELECT CASE (i_fix_neg_snow)
-        CASE (ip_fix_neg_snow_none)
+        CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
           esoil_surft(l,n) = (1.0 - flake(l,n)) *                              &
                              (1.0 - fracaero_t(l,n) * canopy(l,n) / edt) *     &
                                  resfs(l,n) * fqw_surft(l,n) / resft(l,n)
@@ -466,7 +466,7 @@ DO n = 1,nsurft
         ! With the fix, ecan_surft will have been initialized and must be
         ! zeroed.
         SELECT CASE (i_fix_neg_snow)
-        CASE (ip_fix_neg_snow_none)
+        CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
           ! No action in this case.
         CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
           ecan_surft(l,n) = 0.0
