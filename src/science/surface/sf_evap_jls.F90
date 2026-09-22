@@ -300,16 +300,16 @@ DO n = 1,nsurft
                           fqw_surft(l,n) / resft(l,n)
         IF (snow_surft(l,n)  >   0.0) THEN
           SELECT CASE (i_fix_neg_snow)
-            CASE (ip_fix_neg_snow_v2)
-              ei_surft(l,n) = (1.0 - flake(l,n)) * fracaero_s(l,n) *           &
-                              fqw_surft(l,n) / resft(l,n)
-            CASE (ip_fix_neg_snow_v3)
-              ! We do not pass a separate resistance factor for canopy snow
-              ! to this routine, but we can effectively back it out.
-              ei_surft(l,n) = (1.0 - (flake(l,n) + (1.0 - flake(l,n)) *        &
-                              (fracaero_t(l,n) - fracaero_s(l,n)) +            &
-                              (1.0 - fracaero_t(l,n)) * resfs(l,n) ) /         &
-                              resft(l,n) ) * fqw_surft(l,n)
+          CASE (ip_fix_neg_snow_v2)
+            ei_surft(l,n) = (1.0 - flake(l,n)) * fracaero_s(l,n) *             &
+                            fqw_surft(l,n) / resft(l,n)
+          CASE (ip_fix_neg_snow_v3)
+            ! We do not pass a separate resistance factor for canopy snow
+            ! to this routine, but we can effectively back it out.
+            ei_surft(l,n) = (1.0 - (flake(l,n) + (1.0 - flake(l,n)) *          &
+                            (fracaero_t(l,n) - fracaero_s(l,n)) +              &
+                            (1.0 - fracaero_t(l,n)) * resfs(l,n) ) /           &
+                            resft(l,n) ) * fqw_surft(l,n)
           END SELECT
           le_surft_old(l,n) = le_surft_old(l,n) + lf * ei_surft(l,n)
         END IF

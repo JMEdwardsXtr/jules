@@ -1264,61 +1264,61 @@ CALL physiol (                                                                 &
 
 
 SELECT CASE(i_fix_neg_snow)
-  CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                       &
-        ip_fix_neg_snow_v1, ip_fix_neg_snow_v2)
-    ! Update gc_surft for canopy snow if using the canopy snow scheme
-    IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
-      DO n = 1,npft
-        IF ( cansnowtile(n) ) THEN
+CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                         &
+      ip_fix_neg_snow_v1, ip_fix_neg_snow_v2)
+  ! Update gc_surft for canopy snow if using the canopy snow scheme
+  IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
+    DO n = 1,npft
+      IF ( cansnowtile(n) ) THEN
 !$OMP PARALLEL DO IF(surft_pts(n) > 1) DEFAULT(NONE) PRIVATE(i, j, k, l)       &
 !$OMP          SHARED(surft_pts, surft_index, land_index, t_i_length,          &
 !$OMP                 snow_surft, gc_surft, catch_snow, tstar_surft,           &
 !$OMP                 vshr_land, n)   SCHEDULE(STATIC)
-          DO k = 1,surft_pts(n)
-            l = surft_index(k,n)
-            IF (snow_surft(l,n) >  0.0) THEN
-              j = (land_index(l) - 1) / t_i_length + 1
-              i = land_index(l) - (j-1) * t_i_length
-              gc_surft(l,n) = 0.06 * snow_surft(l,n)**0.6                      &
-                           * catch_snow(l,n)**0.4                              &
-                           * 2.06e-5 * (tm / tstar_surft(l,n))**1.75           &
-                           * (1.79+3 * SQRT(vshr_land(i,j)))                   &
-                           / (2 * rho_ice * 5.0e-4**2)
-            END IF
-          END DO
+        DO k = 1,surft_pts(n)
+          l = surft_index(k,n)
+          IF (snow_surft(l,n) >  0.0) THEN
+            j = (land_index(l) - 1) / t_i_length + 1
+            i = land_index(l) - (j-1) * t_i_length
+            gc_surft(l,n) = 0.06 * snow_surft(l,n)**0.6                        &
+                         * catch_snow(l,n)**0.4                                &
+                         * 2.06e-5 * (tm / tstar_surft(l,n))**1.75             &
+                         * (1.79+3 * SQRT(vshr_land(i,j)))                     &
+                         / (2 * rho_ice * 5.0e-4**2)
+          END IF
+        END DO
 !$OMP END PARALLEL DO
-        END IF
-      END DO
-    END IF
-  CASE (ip_fix_neg_snow_v3)
-    ! Use an explicit conductance here and limit the exposure factor to 0.5:
-    ! certainly cannot exceed 1.0 and selecting 0.5 allows for restriction of
-    ! sublimation from the lower surface of a particle lying on the canopy.
-    IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
-      DO n = 1,npft
-        IF ( cansnowtile(n) ) THEN
+      END IF
+    END DO
+  END IF
+CASE (ip_fix_neg_snow_v3)
+  ! Use an explicit conductance here and limit the exposure factor to 0.5:
+  ! certainly cannot exceed 1.0 and selecting 0.5 allows for restriction of
+  ! sublimation from the lower surface of a particle lying on the canopy.
+  IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
+    DO n = 1,npft
+      IF ( cansnowtile(n) ) THEN
 !$OMP PARALLEL DO IF(surft_pts(n) > 1) DEFAULT(NONE) PRIVATE(i, j, k, l)       &
 !$OMP          SHARED(surft_pts, surft_index, land_index, t_i_length,          &
 !$OMP                 snow_surft, gcan_snow, catch_snow, tstar_surft,          &
 !$OMP                 vshr_land, n)   SCHEDULE(STATIC)
-          DO k = 1,surft_pts(n)
-            l = surft_index(k,n)
-            IF (snow_surft(l,n) >  0.0) THEN
-              j = (land_index(l) - 1) / t_i_length + 1
-              i = land_index(l) - (j-1) * t_i_length
-              exposure_factor = MIN( 0.5,                                      &
-                0.02 * ( catch_snow(l,n) /                                     &
-                         MAX(snow_surft(l,n), EPSILON(snow_surft)) )**0.4 )
-              gcan_snow(l,n) = 3.0 * snow_surft(l,n) * exposure_factor *       &
-                           * 2.06e-5 * (tm / tstar_surft(l,n))**1.75           &
-                           * (1.79+3 * SQRT(vshr_land(i,j)))                   &
-                           / (2 * rho_ice * 5.0e-4**2)
-            END IF
-          END DO
+        DO k = 1,surft_pts(n)
+          l = surft_index(k,n)
+          IF (snow_surft(l,n) >  0.0) THEN
+            j = (land_index(l) - 1) / t_i_length + 1
+            i = land_index(l) - (j-1) * t_i_length
+            exposure_factor = MIN( 0.5,                                        &
+              0.02 * ( catch_snow(l,n) /                                       &
+                       MAX(snow_surft(l,n), EPSILON(snow_surft)) )**0.4 )
+            gcan_snow(l,n) = 3.0 * snow_surft(l,n) * exposure_factor *         &
+                         * 2.06e-5 * (tm / tstar_surft(l,n))**1.75             &
+                         * (1.79+3 * SQRT(vshr_land(i,j)))                     &
+                         / (2 * rho_ice * 5.0e-4**2)
+          END IF
+        END DO
 !$OMP END PARALLEL DO
-        END IF
-      END DO
-    END IF
+      END IF
+    END DO
+  END IF
 END SELECT
 
 !----------------------------------------------------------------------

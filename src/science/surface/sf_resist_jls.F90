@@ -245,7 +245,7 @@ DO k = 1,surft_pts
                           ( fracaero_t(l) - fracaero_s(l) +                    &
                             fracaero_s(l) * gcan_snow(l) /                     &
                             ( gcan_snow(l) + ch(l) * vshr(i,j) )
-                            (1.0 - fracaero_t(l)) * resfs(l) )
+    (1.0 - fracaero_t(l)) * resfs(l) )
   ELSE
     resft(l) = flake(l) + (1.0 - flake(l)) *                                   &
                           ( fracaero_t(l) + (1.0 - fracaero_t(l)) * resfs(l) )
