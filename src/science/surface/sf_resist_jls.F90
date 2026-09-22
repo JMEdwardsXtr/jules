@@ -145,7 +145,8 @@ IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_in,zhook_handle)
 !$OMP DEFAULT(NONE)                                                            &
 !$OMP PRIVATE(l,k,j,i,msk_sndpth)                                              &
 !$OMP SHARED(surft_pts,surft_index,land_index,t_i_length,fracaero_t,fracaero_s,&
-!$OMP        dq,snowdep_surft,tstar,snow_surft,                                &
+!$OMP        dq,snowdep_surft,tstar,snow_surft,cansnowtile,can_model,          &
+!$OMP        l_aggregate,                                                      &
 !$OMP        catch,frac_snow_subl_melt,maskd,resfs,gc,ch,vshr,l_et_stom,       &
 !$OMP        l_et_stom_surft,resfs_stom,gcan_snow,gc_stom_surft,flake,         &
 !$OMP        canopy,epdt,resft,l_fix_snow_frac, i_fix_neg_snow)
@@ -244,8 +245,8 @@ DO k = 1,surft_pts
     resft(l) = flake(l) + (1.0 - flake(l)) *                                   &
                           ( fracaero_t(l) - fracaero_s(l) +                    &
                             fracaero_s(l) * gcan_snow(l) /                     &
-                            ( gcan_snow(l) + ch(l) * vshr(i,j) )
-    (1.0 - fracaero_t(l)) * resfs(l) )
+                            ( gcan_snow(l) + ch(l) * vshr(i,j) ) +             &
+                            (1.0 - fracaero_t(l)) * resfs(l) )
   ELSE
     resft(l) = flake(l) + (1.0 - flake(l)) *                                   &
                           ( fracaero_t(l) + (1.0 - fracaero_t(l)) * resfs(l) )

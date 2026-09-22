@@ -138,6 +138,12 @@ USE elevate_mod,                ONLY: elevate
 USE fcdch_mod,                  ONLY: fcdch
 USE gen_anthrop_heat_mod,       ONLY: generate_anthropogenic_heat
 USE heat_con_mod,               ONLY: heat_con
+USE jules_science_fixes_mod,    ONLY: i_fix_neg_snow,                          &
+                                      ip_fix_neg_snow_none,                    &
+                                      ip_fix_neg_snow_none_corr,               &
+                                      ip_fix_neg_snow_v1,                      &
+                                      ip_fix_neg_snow_v2,                      &
+                                      ip_fix_neg_snow_v3
 USE physiol_mod,                ONLY: physiol
 USE planet_constants_mod,       ONLY: cp, vkman, r, c_virtual,epsil=>repsilon
 USE qsat_mod,                   ONLY: qsat, qsat_mix
@@ -959,7 +965,7 @@ REAL(KIND=real_jlslsm) ::                                                      &
 ,lw_down_surftabs(land_pts)                                                    &
                              ! Gridbox sum of absolution changes to downward
                              ! longwave radiation from elevation corrections
-,gcan_snow(land_pts,nsurft)                                                    &
+,gcan_snow(land_pts,nsurft)
                              ! Canopy conductance for subliming snow
 
 ! Water tracer local fields
@@ -1297,7 +1303,8 @@ CASE (ip_fix_neg_snow_v3)
   IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
     DO n = 1,npft
       IF ( cansnowtile(n) ) THEN
-!$OMP PARALLEL DO IF(surft_pts(n) > 1) DEFAULT(NONE) PRIVATE(i, j, k, l)       &
+!$OMP PARALLEL DO IF(surft_pts(n) > 1) DEFAULT(NONE) PRIVATE(i, j, k, l,       &
+!$OMP                  exposure_factor)                                        &
 !$OMP          SHARED(surft_pts, surft_index, land_index, t_i_length,          &
 !$OMP                 snow_surft, gcan_snow, catch_snow, tstar_surft,          &
 !$OMP                 vshr_land, n)   SCHEDULE(STATIC)
@@ -1309,7 +1316,7 @@ CASE (ip_fix_neg_snow_v3)
             exposure_factor = MIN( 0.5,                                        &
               0.02 * ( catch_snow(l,n) /                                       &
                        MAX(snow_surft(l,n), EPSILON(snow_surft)) )**0.4 )
-            gcan_snow(l,n) = 3.0 * snow_surft(l,n) * exposure_factor *         &
+            gcan_snow(l,n) = 3.0 * snow_surft(l,n) * exposure_factor           &
                          * 2.06e-5 * (tm / tstar_surft(l,n))**1.75             &
                          * (1.79+3 * SQRT(vshr_land(i,j)))                     &
                          / (2 * rho_ice * 5.0e-4**2)
