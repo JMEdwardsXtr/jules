@@ -1320,6 +1320,8 @@ CASE (ip_fix_neg_snow_v3)
                          * 2.06e-5 * (tm / tstar_surft(l,n))**1.75             &
                          * (1.79+3 * SQRT(vshr_land(i,j)))                     &
                          / (2 * rho_ice * 5.0e-4**2)
+          ELSE
+            gcan_snow(l,n) = 0.0
           END IF
         END DO
 !$OMP END PARALLEL DO
