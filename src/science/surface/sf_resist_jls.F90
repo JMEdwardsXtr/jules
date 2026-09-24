@@ -245,8 +245,10 @@ END DO
 SELECT CASE(i_fix_neg_snow)
 CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                         &
       ip_fix_neg_snow_v1, ip_fix_neg_snow_v2)
-  ! RESFT < 1 for snow on canopy if canopy snow model used, so re-calculate.
-  ! This works only if the first npft tiles are the vegetated ones.
+  ! RESFT < 1 for snow on canopy if canopy snow model used, because
+  ! there is an extra resistance to sublimation from the canopy,
+  ! so re-calculate. This works only if the first npft tiles are the
+  ! vegetated ones.
   IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
     IF ( cansnowtile ) THEN
 !$OMP PARALLEL DO IF(surft_pts > 1) DEFAULT(NONE) PRIVATE(i, j, k, l)          &

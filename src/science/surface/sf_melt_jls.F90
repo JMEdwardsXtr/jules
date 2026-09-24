@@ -295,7 +295,7 @@ DO k = 1,surft_pts
     END SELECT
   ELSE
     SELECT CASE (i_fix_neg_snow)
-    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_v1)
+    CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr, ip_fix_neg_snow_v1)
       ! No action.
     CASE (ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
       dtstar = 0.0
