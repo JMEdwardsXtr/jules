@@ -44,46 +44,53 @@ is retired. See module for when the switch is due for review.
 
    The issues are discussed before the permitted options. Initial investigation
    of the causes of negative amounts of snow revealed that the original
-   formulation of melting was incorrect (the variable lcmelt), and that
-   the interception of snow by an overloaded canopy could generate excessive
-   melting leading to negative amounts of snow. Fixing these issues revealed
-   proiblems with numerical rounding and underflows that required the
-   reformulation of mass balance in terms of actual increments, rather than
-   as a rate of melting or sublimation multipled by the timestep, leading
-   to a loss of bit-reproducibility. These fixes were introduced under
-   algorithm, apart from the change to increments, and the option .true.
-   intended to apply the corrections.
+   formulation of melting was incorrect (the erroneous use of the latent heat
+   of condensation in the variable lcmelt), and that the interception of
+   snow by an overloaded canopy could generate excessive melting leading
+   to negative amounts of snow. Fixing these issues revealed problems with
+   numerical rounding and underflows that required the reformulation of
+   mass balance in terms of actual increments, rather than as a rate of
+   melting or sublimation multipiled by the timestep, leading to a loss
+   of bit-reproducibility. These fixes were introduced at version 7.5
+   (Ticket #1396) under the logical l_fix_neg_snow, with the option .false.
+   intended to result in no changes to the algorithm apart from the change
+   from rates to increments, and the option .true. intended to apply the
+   corrections.
 
    Unfortunately, a new bug was inadvertently introduced into the
    calculation of melting during the reformulation in terms of increments,
-   and testing on a wider range of compilers exposed another numerical
-   problem with very small amounts of snow, leading to division by 0.
-   Fixing these issues further exposed a problem with the formulation
-   of the sublimation of snow from canopies when the canopy snow scheme was
-   enabled, such that the presence of any positive amount of snow on a
-   canopy would turn off evaporation of water, leading to an unnatural
-   and unphysical sensitivity of the model to tiny amounts of snow. A
-   provisional fix for this has been made availble.
+   and testing on a wider range of compilers after the release exposed
+   another numerical problem with very small amounts of snow, leading to
+   division by 0. Fixing these issues further exposed a problem with the
+   formulation of the sublimation of snow from canopies when the canopy
+   snow scheme was enabled, such that the presence of any positive amount
+   of snow on a canopy would turn off evaporation of water, leading to an
+   unnatural and unphysical sensitivity of the model to tiny amounts of
+   snow. A minimal fix for this has been made available.
 
-   We are obliged to support the following options:
+   The use of different versions of the fix in different configurations
+   means that we are obliged to support the following options:
 
    0. Code equivalent to l_fix_neg_snow = .false., namely, the original
       code, except for the reformulation in terms of increments and the
       associated bug thereby introduced into melting.
 
-   1. A version that corrects only the bug introduced ubder option 0,
+   1. A version that corrects only the bug introduced under option 0,
       while retaining the original issues leading to the generation of
       negative amounts of snow. This is provided only for historical
       convenience for people upgrading from older version of JULES.
 
    2. The option that was previously available with l_fix_neg_snow = .true.
+      This is currently the default in standalone JULES.
 
    3. A fix to the underlying problems and the bug in the calculation of
       melting, but not to the issue of the suppression of canopy
-      evporation by small amounts of snow.
+      evaporation by small amounts of snow. This option is required for the
+      development of GC6 because it has been used in the development of
+      this configuration.
 
-   4. As option 3, but with a provisional fix to the unnatural sensitivity
-      of evporation to tiny amounts of snow.
+   4. As option 3, but with a minimal fix to the unnatural sensitivity
+      of evaporation to tiny amounts of snow.
 
 .. nml:member:: l_accurate_rho
 

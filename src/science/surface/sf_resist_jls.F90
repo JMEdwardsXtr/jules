@@ -19,7 +19,8 @@ CONTAINS
 !    Arguments --------------------------------------------------------
 SUBROUTINE sf_resist (                                                         &
  land_pts,surft_pts,land_index,surft_index,cansnowtile,                        &
- canopy,catch,ch,dq,epdt,flake,gc,gc_stom_surft,snowdep_surft,snow_surft,      &
+ canopy,catch,ch,dq,epdt,flake,gc,gcan_snow,gc_stom_surft,                     &
+ snowdep_surft,snow_surft,                                                     &
  vshr,tstar,fracaero_t, fracaero_s,resfs,resft,                                &
  resfs_stom,l_et_stom,l_et_stom_surft)
 
@@ -78,6 +79,8 @@ REAL(KIND=real_jlslsm), INTENT(IN) ::                                          &
 ,gc(land_pts)                                                                  &
                      ! IN Interactive canopy conductance
 !                          !    to evaporation (m/s)
+,gcan_snow(land_pts)                                                           &
+                     ! IN Canopy conductance for sublimation of snow (m/s)
 ,gc_stom_surft(land_pts)                                                       &
                      ! IN canopy conductance (excluding soil) (m/s)
 ,snowdep_surft(land_pts)                                                       &
@@ -142,9 +145,10 @@ IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_in,zhook_handle)
 !$OMP DEFAULT(NONE)                                                            &
 !$OMP PRIVATE(l,k,j,i,msk_sndpth)                                              &
 !$OMP SHARED(surft_pts,surft_index,land_index,t_i_length,fracaero_t,fracaero_s,&
-!$OMP        dq,snowdep_surft,tstar,snow_surft,                                &
+!$OMP        dq,snowdep_surft,tstar,snow_surft,cansnowtile,can_model,          &
+!$OMP        l_aggregate,                                                      &
 !$OMP        catch,frac_snow_subl_melt,maskd,resfs,gc,ch,vshr,l_et_stom,       &
-!$OMP        l_et_stom_surft,resfs_stom,gc_stom_surft,flake,                   &
+!$OMP        l_et_stom_surft,resfs_stom,gcan_snow,gc_stom_surft,flake,         &
 !$OMP        canopy,epdt,resft,l_fix_snow_frac, i_fix_neg_snow)
 DO k = 1,surft_pts
   l = surft_index(k)
@@ -235,8 +239,18 @@ DO k = 1,surft_pts
   IF (l_et_stom .OR. l_et_stom_surft) THEN
     resfs_stom(l) = gc_stom_surft(l) / ( gc_stom_surft(l) + ch(l) * vshr(i,j) )
   END IF
-  resft(l) = flake(l) + (1.0 - flake(l)) *                                     &
-                        ( fracaero_t(l) + (1.0 - fracaero_t(l)) * resfs(l) )
+  IF ( (i_fix_neg_snow == ip_fix_neg_snow_v3) .AND.                            &
+       ( .NOT. l_aggregate .AND. can_model == 4) .AND.                         &
+       cansnowtile ) THEN
+    resft(l) = flake(l) + (1.0 - flake(l)) *                                   &
+                          ( fracaero_t(l) - fracaero_s(l) +                    &
+                            fracaero_s(l) * gcan_snow(l) /                     &
+                            ( gcan_snow(l) + ch(l) * vshr(i,j) ) +             &
+                            (1.0 - fracaero_t(l)) * resfs(l) )
+  ELSE
+    resft(l) = flake(l) + (1.0 - flake(l)) *                                   &
+                          ( fracaero_t(l) + (1.0 - fracaero_t(l)) * resfs(l) )
+  END IF
 
 END DO
 !$OMP END PARALLEL DO
@@ -245,10 +259,8 @@ END DO
 SELECT CASE(i_fix_neg_snow)
 CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr,                         &
       ip_fix_neg_snow_v1, ip_fix_neg_snow_v2)
-  ! RESFT < 1 for snow on canopy if canopy snow model used, because
-  ! there is an extra resistance to sublimation from the canopy,
-  ! so re-calculate. This works only if the first npft tiles are the
-  ! vegetated ones.
+  ! RESFT < 1 for snow on canopy if canopy snow model used, so re-calculate.
+  ! This works only if the first npft tiles are the vegetated ones.
   IF ( .NOT. l_aggregate .AND. can_model == 4) THEN
     IF ( cansnowtile ) THEN
 !$OMP PARALLEL DO IF(surft_pts > 1) DEFAULT(NONE) PRIVATE(i, j, k, l)          &
