@@ -435,11 +435,14 @@ DO n = 1,nsurft
                                      *fqw_surft(l,n) / resft(l,n)
       END IF
       elake_surft(l,n) = flake(l,n) * fqw_surft(l,n) / resft(l,n)
-      ! With the fix, this has already been calculated and adjusted for
-      ! exhaustion of the snow store.
-      IF ( i_fix_neg_snow == ip_fix_neg_snow_none)                             &
+      SELECT CASE (i_fix_neg_snow)
+      CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
         ecan_surft(l,n) = (1.0 - flake(l,n)) *                                 &
                           fracaero_t(l,n) * fqw_surft(l,n) / resft(l,n)
+      CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_none_v2, ip_fix_neg_snow_v3)
+        ! With the fix, this has already been calculated and adjusted for
+        ! exhaustion of the snow store.
+      END SELECT
       edt = ecan_surft(l,n) * timestep
       IF ( edt  >   canopy(l,n) ) THEN
         SELECT CASE (i_fix_neg_snow)
