@@ -439,7 +439,7 @@ DO n = 1,nsurft
       CASE (ip_fix_neg_snow_none, ip_fix_neg_snow_none_corr)
         ecan_surft(l,n) = (1.0 - flake(l,n)) *                                 &
                           fracaero_t(l,n) * fqw_surft(l,n) / resft(l,n)
-      CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_none_v2, ip_fix_neg_snow_v3)
+      CASE (ip_fix_neg_snow_v1, ip_fix_neg_snow_v2, ip_fix_neg_snow_v3)
         ! With the fix, this has already been calculated and adjusted for
         ! exhaustion of the snow store.
       END SELECT
