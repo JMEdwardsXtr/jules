@@ -161,13 +161,6 @@ is retired. See module for when the switch is due for review.
    set to zero, which causes the roof to be effectively uncoupled when
    :nml:mem:`JULES_VEGETATION::l_vegcan_soilfx`.
 
-.. nml:member:: l_fix_neg_snow
-
-   :type: logical
-   :default: F
-
-   This has been replaced by :nml:mem:`JULES_TEMP_FIXES::i_fix_neg_snow` .
-
 .. nml:member:: l_fix_osa_chloro
 
    :type: logical

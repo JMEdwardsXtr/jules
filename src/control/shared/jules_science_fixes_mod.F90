@@ -478,7 +478,7 @@ IF ( i_fix_neg_snow /= ip_fix_neg_snow_v3 ) THEN
   cmessage    =                                                     newline // &
   'Model run does not include the most recent fix to correct '    //newline // &
   'issues that can lead to the generation of negative amounts '   //newline // &
-  'of snow. See JULES issue #????.'
+  'of snow. See JULES issue #167.'
   CALL ereport(RoutineName, errorstatus, cmessage)
 END IF
 
