@@ -16,6 +16,7 @@ The version numbers can be specified with or without "vn".
 import os
 import sys
 import re
+import shutil
 
 
 def read_file(fname):
@@ -71,12 +72,16 @@ def copy_metadata(dirs, new_version):
     '''Create a vnX.Y metadata. This copies the HEAD metadata to vnX.Y.'''
 
     # First change any spurious umX.Y or vnX.Y in urls to "latest" then copy
-    for dir in dirs:
-        fname = "%s/HEAD/rose-meta.conf" % dir
+    for meta_dir in dirs:
+        fname = f"{meta_dir}/HEAD/rose-meta.conf"
         print(fname)
         check_for_spurious_url_tags(fname)
-        rc, stdout, stderr = run_command("fcm cp %s/HEAD %s/vn%s"%(dir, dir,
-                                                                   new_version))
+        old = os.path.join(meta_dir, "HEAD")
+        new = os.path.join(meta_dir, f"vn{new_version}")
+        shutil.copytree(old, new)
+        rc, stdout, stderr = run_command(f"git add {new}")
+        if rc:
+            raise RuntimeError(f"Error running command 'git add {new}':\n\n{stderr}")
 
 
 def find_dirs(rootdir):
@@ -127,14 +132,14 @@ def check_version_numbers(fname, current_version, new_version):
             print(line.strip())
             if not re.search(r"%s"%(current_version), line):
                 print("%s does not match 'Current version'\n"%(fname))
-                something = input("Press CTRL-c to abort, or enter to continue: ")
+                _ = input("Press CTRL-c to abort, or enter to continue: ")
             else:
                 print("%s consistent with 'Current version'"%(fname))
 
     if abs(new_version - current_version - 0.1) > 0.01:
         print ("Increment between 'Current version' and 'New version' greater"
                " than normal value 0.1. Was this intentional?\n")
-        something = input("Press CTRL-c to abort, or enter to continue: ")
+        _ = input("Press CTRL-c to abort, or enter to continue: ")
 
 
 def check_for_new_revision_dirs(dirs, new_version):
@@ -190,6 +195,8 @@ if __name__ == '__main__':
     dirs = find_dirs("../rose-meta/jules-shared")
     dirs.append("../rose-meta/jules-fcm-make")
     dirs.append("../rose-meta/jules-standalone")
+    dirs.append("../rose-meta/jules-um")
+    dirs.append("../rose-meta/jules-lfric")
 
     # Check that new_version directories do not already exist
     print("\nChecking for existing vn%s directories"%(new_version))
