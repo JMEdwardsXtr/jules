@@ -80,6 +80,9 @@ TYPE :: jules_vars_data_type
   REAL(KIND=real_jlslsm), ALLOCATABLE :: unload_backgrnd_pft(:,:)
     ! Background unloading rate for canopy (s-1)
 
+  REAL(KIND=real_jlslsm), ALLOCATABLE :: wind_compaction(:)
+    ! Wind-speed dependent compaction factor for snow
+
   REAL(KIND=real_jlslsm), ALLOCATABLE :: diff_frac(:)
     ! The fraction of radiation that is diffuse
 
@@ -163,6 +166,9 @@ TYPE :: jules_vars_type
   REAL(KIND=real_jlslsm), POINTER :: unload_backgrnd_pft(:,:)
     ! Background unloading rate for canopy (s-1)
 
+  REAL(KIND=real_jlslsm), POINTER :: wind_compaction(:)
+    ! Wind-speed dependent compaction factor for snow
+
   REAL(KIND=real_jlslsm), POINTER :: diff_frac(:)
     ! The fraction of radiation that is diffuse
 
@@ -218,7 +224,7 @@ CONTAINS
 
 SUBROUTINE jules_vars_alloc(land_pts,ntype,nsurft,rad_nband,nsoilt,sm_levels,  &
                 t_i_length, t_j_length, npft, bl_levels, pdims_s, pdims,       &
-                l_albedo_obs, cansnowtile, l_deposition,                       &
+                l_albedo_obs, cansnowtile, l_deposition, l_rhofresh_extern,    &
                 jules_vars_data)
 
 USE atm_fields_bounds_mod, ONLY: array_dims
@@ -235,7 +241,8 @@ INTEGER, INTENT(IN) :: land_pts,ntype,nsurft,rad_nband,nsoilt,sm_levels,       &
 
 TYPE(array_dims), INTENT(IN) :: pdims_s, pdims
 
-LOGICAL, INTENT(IN) :: l_albedo_obs, cansnowtile(npft), l_deposition
+LOGICAL, INTENT(IN) :: l_albedo_obs, cansnowtile(npft), l_deposition,          &
+                       l_rhofresh_extern
 
 TYPE(jules_vars_data_type), INTENT(IN OUT) :: jules_vars_data
 
@@ -280,6 +287,13 @@ ELSE
   ALLOCATE(jules_vars_data%unload_backgrnd_pft(1,1))
 END IF
 jules_vars_data%unload_backgrnd_pft(:,:) = 0.0
+
+IF (l_rhofresh_extern) THEN
+  ALLOCATE(jules_vars_data%wind_compaction(land_pts))
+ELSE
+  ALLOCATE(jules_vars_data%wind_compaction(1))
+END IF
+jules_vars_data%wind_compaction(:) = 1.0
 
 ALLOCATE(jules_vars_data%diff_frac(t_i_length * t_j_length))
 jules_vars_data%diff_frac(:) = 0.0
@@ -361,6 +375,7 @@ DEALLOCATE(jules_vars_data%lw_down_elevcorr_surft)
 DEALLOCATE(jules_vars_data%z_land_ij)
 DEALLOCATE(jules_vars_data%z_land_land)
 DEALLOCATE(jules_vars_data%unload_backgrnd_pft)
+DEALLOCATE(jules_vars_data%wind_compaction)
 DEALLOCATE(jules_vars_data%diff_frac)
 DEALLOCATE(jules_vars_data%zh)
 DEALLOCATE(jules_vars_data%dzl)
@@ -418,6 +433,7 @@ jules_vars%lw_down_elevcorr_surft => jules_vars_data%lw_down_elevcorr_surft
 jules_vars%z_land_ij => jules_vars_data%z_land_ij
 jules_vars%z_land_land => jules_vars_data%z_land_land
 jules_vars%unload_backgrnd_pft => jules_vars_data%unload_backgrnd_pft
+jules_vars%wind_compaction => jules_vars_data%wind_compaction
 jules_vars%diff_frac => jules_vars_data%diff_frac
 jules_vars%zh => jules_vars_data%zh
 jules_vars%dzl => jules_vars_data%dzl
@@ -470,6 +486,7 @@ NULLIFY(jules_vars%lw_down_elevcorr_surft)
 NULLIFY(jules_vars%z_land_ij)
 NULLIFY(jules_vars%z_land_land)
 NULLIFY(jules_vars%unload_backgrnd_pft)
+NULLIFY(jules_vars%wind_compaction)
 NULLIFY(jules_vars%diff_frac)
 NULLIFY(jules_vars%zh)
 NULLIFY(jules_vars%dzl)

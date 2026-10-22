@@ -24,8 +24,9 @@ CONTAINS
 SUBROUTINE snowpack ( surft_n, land_pts, surft_pts, n_wtrac_jls, timestep,     &
                       cansnowtile, nsnow, surft_index, nsurft, csnow,          &
                       ei_surft, hcaps1_soilt, hcons, infiltration, ksnow,      &
-                      rho_snow_grnd, smcl1_soilt, snowfall, sthf1_soilt,       &
-                      surf_htf_surft, tile_frac, smvcst1_soilt,                &
+                      rho_snow_grnd, smcl1_soilt, snowfall,                    &
+                      wind_compaction, rhofresh_extern,                        &
+                      sthf1_soilt, surf_htf_surft, tile_frac, smvcst1_soilt,   &
                       ei_surft_wtrac, infiltration_wtrac, ds,                  &
                       melt_surft, snowinc_surft, sice, sliq, snomlt_sub_htf,   &
                       snowdepth, snowmass, tsnow,                              &
@@ -67,6 +68,8 @@ USE jules_snow_mod, ONLY:                                                      &
     ! Maximum possible number of snow layers.
   l_snow_infilt,                                                               &
     ! Include infiltration of rain into snow.
+  l_rhofresh_extern,                                                           &
+    ! The density of fresh snow is set externally
   i_basal_melting_opt,                                                         &
     ! Selector of option for basal melting
   ip_basal_melting_diag_0,                                                     &
@@ -173,6 +176,12 @@ REAL(KIND=real_jlslsm), INTENT(IN) ::                                          &
 
 ! Array arguments with intent(inout)
 TYPE (strnewsfdiag), INTENT(IN OUT) :: sf_diag
+
+REAL(KIND=real_jlslsm), INTENT(IN) ::                                          &
+  rhofresh_extern(land_pts),                                                   &
+    ! Density of fresh snow (kg/m3).
+  wind_compaction(land_pts)
+    ! Wind compaction factor for fresh snow
 
 REAL(KIND=real_jlslsm), INTENT(IN OUT) ::                                      &
   ds(land_pts,nsmax),                                                          &
@@ -872,7 +881,21 @@ DO k = 1,surft_pts
     END IF
 
     tsnow0(i) = tsnow(i,1)
-    rho0(i)   = rho_snow_fresh
+    IF ( (l_rhofresh_extern) .AND. (snowfall(i) > 0.0) ) THEN
+      IF (cansnowtile ) THEN
+        ! We assume that snow is unloaded from the canopy so quickly
+        ! that it still has the density of fresh snow.
+        rho0(i) = MAX(50.0, rhofresh_extern(i)) * wind_compaction(i)
+      ELSE
+        ! Frost is added with the constant fresh snow density
+        rho0(i) = ( MAX(50.0, rhofresh_extern(i)) * wind_compaction(i) *       &
+                        snowfall(i) -                                          &
+                    MIN(ei_surft(i), 0.0) * timestep * rhofresh_extern(i) ) /  &
+                  (snowfall(i) - MIN(ei_surft(i), 0.0) * timestep)
+      END IF
+    ELSE
+      rho0(i)   = rho_snow_fresh
+    END IF
 
     !-------------------------------------------------------------------------
     ! Diagnose total snow depth and mass

@@ -21,8 +21,9 @@ CONTAINS
 SUBROUTINE snow ( land_pts, timestep, stf_hf_snow_melt, nsurft, n_wtrac_jls,   &
                   surft_pts, surft_index, catch_snow, con_snow,                &
                   con_rain, tile_frac, ls_snow, ls_graup, ls_rain, ei_surft,   &
-                  hcaps1_soilt, hcons, melt_surft, snowinc_surft,              &
-                  smcl1_soilt, sthf1_soilt, surf_htf_surft,                    &
+                  rhofresh_extern,ssafresh_extern,                             &
+                  hcaps1_soilt, hcons, melt_surft,                             &
+                  snowinc_surft, smcl1_soilt, sthf1_soilt, surf_htf_surft,     &
                   t_soil1_soilt, tsurf_elev_surft, tstar_surft,                &
                   smvcst1_soilt, con_snow_wtrac, ei_surft_wtrac,               &
                   rgrain, rgrainl, rho_snow_grnd, sice,                        &
@@ -39,6 +40,7 @@ SUBROUTINE snow ( land_pts, timestep, stf_hf_snow_melt, nsurft, n_wtrac_jls,   &
                   ! New Arguments to replace USE statements
                   ! jules_internal
                   unload_backgrnd_pft, npft, l_flake_model,                    &
+                  wind_compaction,                                             &
                   !Ancil info (IN)
                   l_lice_point, l_lice_surft,                                  &
                   ! Types Variables
@@ -138,6 +140,10 @@ REAL(KIND=real_jlslsm), INTENT(IN) ::                                          &
     ! the mass of snow to be reduced to 0, whereas using the rate can
     ! result in very small presisting amounts of snow because of rounding
     ! errors.
+  rhofresh_extern(land_pts),                                                   &
+    ! Density of fresh snow provided externally (kg m-3).
+  ssafresh_extern(land_pts),                                                   &
+    ! SSA of fresh snow provided externally (m2kg-1).
   hcaps1_soilt(land_pts,nsoilt),                                               &
     ! Soil heat capacity of top layer(J/K/m3).
   hcons(land_pts),                                                             &
@@ -272,6 +278,7 @@ REAL(KIND=real_jlslsm), INTENT(OUT) ::                                         &
 !-----------------------------------------------------------------------------
 INTEGER, INTENT(IN) :: npft
 REAL(KIND=real_jlslsm), INTENT(IN) :: unload_backgrnd_pft(land_pts,npft)
+REAL(KIND=real_jlslsm), INTENT(IN) :: wind_compaction(land_pts)
 
 !ancil_info (IN)
 LOGICAL, INTENT(IN) :: l_lice_point(land_pts)
@@ -842,9 +849,9 @@ DO n = 1,nsurft
                   cansnowtile(n), nsnow(:,n), surft_index(:,n), nsurft, csnow, &
                   ei_surft(:,n), hcaps1_soilt(:,m), hcon_lake, infiltration,   &
                   ksnow, rho_snow_grnd(:,n), smcl1_soilt(:,m),                 &
-                  snowfall, sthf1_soilt(:,m), surf_htf_surft(:,n),             &
-                  tile_frac, smvcst1_soilt(:,m), ei_surft_wtrac,               &
-                  wtrac_sn%infiltration, ds_sl,                                &
+                  snowfall, wind_compaction, rhofresh_extern, sthf1_soilt(:,m),&
+                  surf_htf_surft(:,n), tile_frac, smvcst1_soilt(:,m),          &
+                  ei_surft_wtrac, wtrac_sn%infiltration, ds_sl,                &
                   melt_surft(:,n), snowinc_surft(:,n), sice_sl, sliq_sl,       &
                   snomlt_sub_htf, snowdepth(:,n), snowmass, tsnow_sl,          &
                   ts1_lake_gb, tsurf_elev_surft(:,n),                          &
@@ -861,9 +868,9 @@ DO n = 1,nsurft
                   cansnowtile(n), nsnow(:,n), surft_index(:,n), nsurft, csnow, &
                   ei_surft(:,n), hcaps1_soilt(:,m), hcons, infiltration,       &
                   ksnow, rho_snow_grnd(:,n), smcl1_soilt(:,m),                 &
-                  snowfall, sthf1_soilt(:,m), surf_htf_surft(:,n),             &
-                  tile_frac, smvcst1_soilt(:,m), ei_surft_wtrac,               &
-                  wtrac_sn%infiltration, ds_sl,                                &
+                  snowfall, wind_compaction, rhofresh_extern, sthf1_soilt(:,m),&
+                  surf_htf_surft(:,n), tile_frac, smvcst1_soilt(:,m),          &
+                  ei_surft_wtrac, wtrac_sn%infiltration, ds_sl,                &
                   melt_surft(:,n), snowinc_surft(:,n), sice_sl, sliq_sl,       &
                   snomlt_sub_htf, snowdepth(:,n), snowmass, tsnow_sl,          &
                   t_soil1_soilt(:,m), tsurf_elev_surft(:,n),                   &

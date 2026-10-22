@@ -49,6 +49,12 @@ LOGICAL ::                                                                     &
                    ! Flag to negelect canopy heat capacity in the presence
                    ! of snow if not using an explicit canopy model
 
+LOGICAL ::                                                                     &
+  l_rhofresh_extern = .FALSE.
+                   ! The density of fresh snow is set externally. This is
+                   ! allowed only if JULES is coupled to a model containing a
+                   ! microphysics scheme.
+
 INTEGER ::                                                                     &
   frac_snow_subl_melt = 0
                    ! Switch for use of snow-cover fraction in the calculation
@@ -288,6 +294,10 @@ REAL(KIND=real_jlslsm) :: unload_rate_u(npft_max)
 DATA unload_rate_cnst / npft_max * 0.0 /
 DATA unload_rate_u / npft_max * 0.0 /
 
+REAL(KIND=real_jlslsm) :: wind_compaction_sqrt = 0.0
+!                   !  Constant of proportionality in setting
+                    !  wind-driven compaction of snow
+
 REAL(KIND=real_jlslsm) :: can_clump(npft_max)
                  ! Clumping factor for snow in the canopy
 REAL(KIND=real_jlslsm) :: lai_alb_lim_sn(npft_max)
@@ -320,7 +330,8 @@ NAMELIST  / jules_snow/                                                        &
     snowinterceptfact, snowloadlai, snowunloadfact, dzsnow, cansnowpft,        &
     unload_rate_cnst, unload_rate_u, can_clump, lai_alb_lim_sn,                &
     n_lai_exposed, l_snow_infilt, l_snow_nocan_hc,                             &
-    i_grain_growth_opt, i_relayer_opt, i_basal_melting_opt
+    i_grain_growth_opt, i_relayer_opt, i_basal_melting_opt,                    &
+    l_rhofresh_extern, wind_compaction_sqrt
 
 CHARACTER(LEN=*), PARAMETER, PRIVATE :: ModuleName='JULES_SNOW_MOD'
 
@@ -430,6 +441,9 @@ CALL jules_print('jules_snow', lineBuffer)
 WRITE(lineBuffer, *) '  l_et_metamorph = ', l_et_metamorph
 CALL jules_print('jules_snow', lineBuffer)
 
+WRITE(lineBuffer, *) '  l_rhofresh_extern = ', l_rhofresh_extern
+CALL jules_print('jules_snow', lineBuffer)
+
 WRITE(lineBuffer, *) '  a_snow_et = ', a_snow_et
 CALL jules_print('jules_snow', lineBuffer)
 
@@ -525,6 +539,9 @@ CALL jules_print('jules_snow', lineBuffer)
 WRITE(lineBuffer,'(a,i3)')' i_basal_melting_opt = ', i_basal_melting_opt
 CALL jules_print('jules_snow', lineBuffer)
 
+WRITE(lineBuffer,*)' wind_compaction_sqrt = ', wind_compaction_sqrt
+CALL jules_print('jules_snow', lineBuffer)
+
 CALL jules_print('jules_snow',                                                 &
     '- - - - - - end of namelist - - - - - -')
 
@@ -563,8 +580,8 @@ CHARACTER(LEN=errormessagelength) :: iomessage
 ! set number of each type of variable in my_namelist type
 INTEGER, PARAMETER :: no_of_types = 3
 INTEGER, PARAMETER :: n_int = 7
-INTEGER, PARAMETER :: n_real = 25 + snow_layers_max + 5 * npft_max
-INTEGER, PARAMETER :: n_log = 5 + npft_max
+INTEGER, PARAMETER :: n_real = 26 + snow_layers_max + 5 * npft_max
+INTEGER, PARAMETER :: n_log = 6 + npft_max
 
 TYPE :: my_namelist
   SEQUENCE
@@ -602,12 +619,14 @@ TYPE :: my_namelist
   REAL(KIND=real_jlslsm) :: can_clump(npft_max)
   REAL(KIND=real_jlslsm) :: lai_alb_lim_sn(npft_max)
   REAL(KIND=real_jlslsm) :: n_lai_exposed(npft_max)
+  REAL(KIND=real_jlslsm) :: wind_compaction_sqrt
   LOGICAL :: l_snowdep_surf
   LOGICAL :: l_rho_snow_corr
   LOGICAL :: cansnowpft(npft_max)
   LOGICAL :: l_snow_infilt
   LOGICAL :: l_snow_nocan_hc
   LOGICAL :: l_et_metamorph
+  LOGICAL :: l_rhofresh_extern
 END TYPE my_namelist
 
 TYPE (my_namelist) :: my_nml
@@ -650,6 +669,7 @@ IF (mype == 0) THEN
   my_nml % b_snow_et           = b_snow_et
   my_nml % c_snow_et           = c_snow_et
   my_nml % rho_snow_et_crit    = rho_snow_et_crit
+  my_nml % wind_compaction_sqrt    = wind_compaction_sqrt
   my_nml % dzsnow              = dzsnow
   my_nml % unload_rate_cnst    = unload_rate_cnst
   my_nml % unload_rate_u       = unload_rate_u
@@ -665,6 +685,7 @@ IF (mype == 0) THEN
   my_nml % i_grain_growth_opt  = i_grain_growth_opt
   my_nml % i_relayer_opt       = i_relayer_opt
   my_nml % i_basal_melting_opt = i_basal_melting_opt
+  my_nml % l_rhofresh_extern   = l_rhofresh_extern
 
 END IF
 
@@ -697,6 +718,7 @@ IF (mype /= 0) THEN
   b_snow_et           = my_nml % b_snow_et
   c_snow_et           = my_nml % c_snow_et
   rho_snow_et_crit    = my_nml % rho_snow_et_crit
+  wind_compaction_sqrt    = my_nml % wind_compaction_sqrt
   dzsnow              = my_nml % dzsnow
   unload_rate_cnst    = my_nml % unload_rate_cnst
   unload_rate_u       = my_nml % unload_rate_u
@@ -712,6 +734,7 @@ IF (mype /= 0) THEN
   i_grain_growth_opt  = my_nml % i_grain_growth_opt
   i_relayer_opt       = my_nml % i_relayer_opt
   i_basal_melting_opt = my_nml % i_basal_melting_opt
+  l_rhofresh_extern   = my_nml % l_rhofresh_extern
 END IF
 
 CALL mpl_type_free(mpl_nml_type,icode)

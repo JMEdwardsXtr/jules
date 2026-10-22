@@ -58,7 +58,7 @@ USE jules_water_tracers_mod,  ONLY: l_wtrac_jls
 
 !Variables- dimensions
 USE jules_surface_types_mod,  ONLY: ncpft,nnpft
-USE jules_snow_mod,           ONLY: nsmax, cansnowtile
+USE jules_snow_mod,           ONLY: nsmax, cansnowtile, l_rhofresh_extern
 USE jules_surface_types_mod,  ONLY: npft, nnvg, ntype
 USE theta_field_sizes,        ONLY: t_i_length, t_j_length,                    &
                                     u_i_length,u_j_length,                     &
@@ -226,7 +226,7 @@ CALL c_z0h_z0m_alloc(ntype)
 
 CALL jules_vars_alloc(land_pts,ntype,nsurft,rad_nband,nsoilt,sm_levels,        &
                 t_i_length, t_j_length, npft, bl_levels, pdims_s, pdims,       &
-                l_albedo_obs, cansnowtile, l_deposition,                       &
+                l_albedo_obs, cansnowtile, l_deposition, l_rhofresh_extern,    &
                 jules_vars_data)
 
 CALL metstats_allocate(land_pts)

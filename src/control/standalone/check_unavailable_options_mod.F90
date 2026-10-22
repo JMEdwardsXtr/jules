@@ -26,6 +26,8 @@ USE jules_rivers_mod,  ONLY: i_river_vn, l_inland, rivers_um_trip,             &
                              trip_globe_shape
 USE jules_radiation_mod, ONLY: l_sea_alb_var_chl, l_dolr_land_black
 USE jules_vegetation_mod, ONLY: l_nrun_mid_trif, l_trif_init_accum
+USE jules_snow_mod, ONLY: l_rhofresh_extern
+
 USE jules_deposition_mod, ONLY: l_ukca_dry_dep_so2wet, l_ukca_ddepo3_ocean,    &
                                 l_deposition_from_ukca
 USE jules_water_tracers_mod, ONLY: l_wtrac_jls
@@ -126,6 +128,15 @@ IF ( l_sea_alb_var_chl ) THEN
      ": The ancillary plumbling for spatially varying chlorophyll content " // &
      "is not yet available for standalone. l_sea_alb_var_chl = ",              &
      l_sea_alb_var_chl
+  CALL jules_print(RoutineName, jules_message, level = PrNorm)
+END IF
+
+! Checks for jules_snow
+IF ( l_rhofresh_extern ) THEN
+  error_sum = error_sum + 1
+  WRITE(jules_message,'(I0,A,L1)') error_sum,                                  &
+     ": An external density for fresh snow cannot be set unless JULES is " //  &
+     "coupled to an external model. l_rhofresh_extern = ", l_rhofresh_extern
   CALL jules_print(RoutineName, jules_message, level = PrNorm)
 END IF
 

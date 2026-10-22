@@ -113,3 +113,19 @@ class vn79_t1088(MacroUpgrade):
         self.add_setting(config, ["namelist:jules_water_resources", "partition_method"], "2")
         self.add_setting(config, ["namelist:jules_water_resources", "sfc_water_factor"], "2.0")
         return config, self.reports
+
+
+class vn79_t1549(MacroUpgrade):
+
+    """Upgrade macro from JULES by J. M. Edwards"""
+
+    BEFORE_TAG = "vn7.9"
+    AFTER_TAG = "vn7.9_t1549"
+
+    def upgrade(self,config, meta_config=None):
+        """Upgrade a JULES runtime app configuration."""
+
+        # Add settings
+        self.add_setting(config, ["namelist:jules_snow", "l_rhofresh_extern"], ".false.")
+        self.add_setting(config, ["namelist:jules_snow", "!!wind_compaction_sqrt"], "0.0")
+        return config, self.reports

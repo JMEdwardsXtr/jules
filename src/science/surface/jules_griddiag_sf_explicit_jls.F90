@@ -62,7 +62,7 @@ SUBROUTINE jules_griddiag_sf_explicit (                                        &
 !ancil_info (IN)
  ssi_index, sice_index_ncat, sice_frac_ncat, sice_pts_ncat,                    &
 !jules_internal
- unload_backgrnd_pft                                                           &
+ unload_backgrnd_pft, wind_compaction                                          &
  )
 
 USE sf_aero_mod, ONLY: sf_aero
@@ -89,7 +89,9 @@ USE blend_h, ONLY: lb
 
 USE jules_snow_mod, ONLY: cansnowtile                                          &
                           ,unload_rate_cnst                                    &
-                          ,unload_rate_u
+                          ,unload_rate_u                                       &
+                          ,l_rhofresh_extern                                   &
+                          ,wind_compaction_sqrt
 
 USE jules_surface_mod, ONLY: formdrag, effective_z0, h_blend_min
 
@@ -360,6 +362,7 @@ REAL(KIND=real_jlslsm), INTENT(IN) ::                                          &
 
 !jules_internal
 REAL(KIND=real_jlslsm), INTENT(IN OUT) :: unload_backgrnd_pft(land_pts,npft)
+REAL(KIND=real_jlslsm), INTENT(IN OUT) :: wind_compaction(land_pts)
 
 !-----------------------------------------------------------------------
 ! LOCAL variables
@@ -762,6 +765,22 @@ DO n = 1, nsurft
     END IF
   END IF
 END DO
+
+IF (l_rhofresh_extern) THEN
+!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(i,j,l,ws10) SHARED(land_pts,        &
+!$OMP land_index,t_i_length,cdr10m,vshr_land,wind_compaction_sqrt,             &
+!$OMP wind_compaction)
+!$OMP PRIVATE(i,j,l,ws10)
+  DO l = 1, land_pts
+    j=(land_index(l) - 1) / t_i_length + 1
+    i = land_index(l) - (j-1) * t_i_length
+    !       Use GBM value of CD for simplicity. The complexity of
+    !       distinguishing coastal points does not seem justified.
+    ws10 = cdr10m(i,j) * vshr_land(i,j)
+    wind_compaction(l) = 1.0 + wind_compaction_sqrt * SQRT(ws10)
+  END DO
+!$OMP END PARALLEL DO
+END IF
 
 IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_out,zhook_handle)
 

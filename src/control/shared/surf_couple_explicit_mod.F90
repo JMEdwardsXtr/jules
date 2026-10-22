@@ -761,7 +761,7 @@ CASE ( jules )
     ainfo%ssi_index, ainfo%sice_index_ncat, ainfo%sice_frac_ncat,              &
     ainfo%sice_pts_ncat,                                                       &
    !jules_internal
-    jules_vars%unload_backgrnd_pft                                             &
+    jules_vars%unload_backgrnd_pft, jules_vars%wind_compaction                 &
     )
 
 CASE ( cable )

@@ -53,6 +53,10 @@ TYPE :: forcing_data_type
                       ! Large-scale snowfall (kg/m2/s)
   REAL, ALLOCATABLE :: con_snow_ij(:,:)
                       ! Convective snowfall (kg/m2/s)
+  REAL, ALLOCATABLE :: rhofresh_ij(:,:)
+                      ! Density of fresh snow (kg/m3)
+  REAL, ALLOCATABLE :: ssafresh_ij(:,:)
+                      ! SSA of fresh snow (kg/m3)
   REAL, ALLOCATABLE :: sw_down_ij(:,:)
                       ! Surface downward SW radiation (W/m2)
   REAL, ALLOCATABLE :: lw_down_ij(:,:)
@@ -79,6 +83,8 @@ TYPE :: forcing_type
   REAL, POINTER :: con_rain_ij(:,:)
   REAL, POINTER :: ls_snow_ij(:,:)
   REAL, POINTER :: con_snow_ij(:,:)
+  REAL, POINTER :: rhofresh_ij(:,:)
+  REAL, POINTER :: ssafresh_ij(:,:)
   REAL, POINTER :: sw_down_ij(:,:)
   REAL, POINTER :: lw_down_ij(:,:)
   REAL, POINTER :: diurnal_temperature_range_ij(:,:)
@@ -136,6 +142,8 @@ ALLOCATE( forcing_data%ls_rain_ij(t_i_length,t_j_length))
 ALLOCATE( forcing_data%con_rain_ij(t_i_length,t_j_length))
 ALLOCATE( forcing_data%ls_snow_ij(t_i_length,t_j_length))
 ALLOCATE( forcing_data%con_snow_ij(t_i_length,t_j_length))
+ALLOCATE( forcing_data%rhofresh_ij(t_i_length,t_j_length))
+ALLOCATE( forcing_data%ssafresh_ij(t_i_length,t_j_length))
 ALLOCATE( forcing_data%sw_down_ij(t_i_length,t_j_length))
 ALLOCATE( forcing_data%lw_down_ij(t_i_length,t_j_length))
 ALLOCATE( forcing_data%diff_rad_ij(t_i_length,t_j_length))
@@ -152,6 +160,8 @@ forcing_data%ls_rain_ij(:,:)                    = 0.0
 forcing_data%con_rain_ij(:,:)                   = 0.0
 forcing_data%ls_snow_ij(:,:)                    = 0.0
 forcing_data%con_snow_ij(:,:)                   = 0.0
+forcing_data%rhofresh_ij(:,:)                   = 0.0
+forcing_data%ssafresh_ij(:,:)                   = 0.0
 forcing_data%sw_down_ij(:,:)                    = 0.0
 forcing_data%lw_down_ij(:,:)                    = 0.0
 forcing_data%diff_rad_ij(:,:)                   = 0.0
@@ -193,6 +203,8 @@ DEALLOCATE( forcing_data%ls_rain_ij)
 DEALLOCATE( forcing_data%con_rain_ij)
 DEALLOCATE( forcing_data%ls_snow_ij)
 DEALLOCATE( forcing_data%con_snow_ij)
+DEALLOCATE( forcing_data%rhofresh_ij)
+DEALLOCATE( forcing_data%ssafresh_ij)
 DEALLOCATE( forcing_data%sw_down_ij)
 DEALLOCATE( forcing_data%lw_down_ij)
 DEALLOCATE( forcing_data%diff_rad_ij)
@@ -237,6 +249,8 @@ forcing%ls_rain_ij => forcing_data%ls_rain_ij
 forcing%con_rain_ij => forcing_data%con_rain_ij
 forcing%ls_snow_ij => forcing_data%ls_snow_ij
 forcing%con_snow_ij => forcing_data%con_snow_ij
+forcing%rhofresh_ij => forcing_data%rhofresh_ij
+forcing%ssafresh_ij => forcing_data%ssafresh_ij
 forcing%sw_down_ij => forcing_data%sw_down_ij
 forcing%lw_down_ij => forcing_data%lw_down_ij
 forcing%diff_rad_ij => forcing_data%diff_rad_ij
@@ -278,6 +292,8 @@ NULLIFY( forcing%ls_rain_ij)
 NULLIFY( forcing%con_rain_ij)
 NULLIFY( forcing%ls_snow_ij)
 NULLIFY( forcing%con_snow_ij)
+NULLIFY( forcing%rhofresh_ij)
+NULLIFY( forcing%ssafresh_ij)
 NULLIFY( forcing%sw_down_ij)
 NULLIFY( forcing%lw_down_ij)
 NULLIFY( forcing%diff_rad_ij)

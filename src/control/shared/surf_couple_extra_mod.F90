@@ -441,6 +441,8 @@ REAL(KIND=real_jlslsm) ::                                                      &
   ls_snow_gb(land_pts),                                                        &
   ls_graup_gb(land_pts),                                                       &
   con_snow_gb(land_pts),                                                       &
+  rhofresh_extern_gb(land_pts),                                                &
+  ssafresh_extern_gb(land_pts),                                                &
   pstar_gb(land_pts),                                                          &
   tl_1_gb(land_pts),                                                           &
   qw_1_gb(land_pts),                                                           &
@@ -574,6 +576,8 @@ CASE ( jules )
       con_rain_gb(l)   = forcing%con_rain_ij(i,j)
       con_snow_gb(l)   = forcing%con_snow_ij(i,j)
       ls_snow_gb(l)    = forcing%ls_snow_ij(i,j)
+      rhofresh_extern_gb(l)    = forcing%rhofresh_ij(i,j)
+      ssafresh_extern_gb(l)    = forcing%ssafresh_ij(i,j)
       ls_graup_gb(l)   = ls_graup_ij(i,j)
       pstar_gb(l)      = forcing%pstar_ij(i,j)
       tl_1_gb(l)       = forcing%tl_1_ij(i,j)
@@ -699,7 +703,8 @@ CASE ( jules )
     CALL snow ( land_pts,timestep,smlt,nsurft,n_wtrac_jls,surft_pts,           &
                 ainfo%surft_index,psparms%catch_snow_surft,con_snow_gb,        &
                 con_rain_gb, tile_frac,ls_snow_gb,ls_graup_gb,ls_rain_gb,      &
-                fluxes%ei_surft,psparms%hcap_soilt(:,:,1),hcons_soilt,         &
+                fluxes%ei_surft,rhofresh_extern_gb,ssafresh_extern_gb,         &
+                psparms%hcap_soilt(:,:,1),hcons_soilt,                         &
                 fluxes%melt_surft,fluxes%snowinc_surft,                        &
                 progs%smcl_soilt(:,:,1),psparms%sthf_soilt(:,:,1),             &
                 fluxes%surf_htf_surft, progs%t_soil_soilt(:,:,1),              &
@@ -721,6 +726,7 @@ CASE ( jules )
                 ! New Arguments to replace USE statements
                 ! jules_internal
                 jules_vars%unload_backgrnd_pft, npft, l_flake_model,           &
+                jules_vars%wind_compaction,                                    &
                 !Ancil info (IN)
                 ainfo%l_lice_point, ainfo%l_lice_surft,                        &
                 ! Types Variables
