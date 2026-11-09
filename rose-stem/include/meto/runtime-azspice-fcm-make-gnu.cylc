@@ -689,6 +689,7 @@ codecov -prj JULES -dpi $CYLC_SUITE_SHARE_DIR/coverage/pgopti.dpi -spi $CYLC_SUI
         inherit = METO_AZSPICE_GNU_NETCDF_COMPARISON
         [[[environment]]]
             OUTPUT_DIR = ../meto_azspice_gnu_loobos_gl8_canevap3/output
+            KGO_DIR = ${DATADIR}/Snow_fix_Test_091126A_KGO
 
     [[nccmp_meto_azspice_gnu_loobos_vegdrag]]
         inherit = METO_AZSPICE_GNU_NETCDF_COMPARISON
